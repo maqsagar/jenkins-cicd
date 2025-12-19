@@ -123,8 +123,14 @@ resource "null_resource" "backend" {
 
   provisioner "remote-exec" {
     inline = [
-      "sudo apt update",
-      "sudo apt install -y python3-pip",
+      # wait for cloud-init & dpkg lock
+      "while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 5; done",
+
+      "export DEBIAN_FRONTEND=noninteractive",
+
+      "sudo apt update -y",
+      "sudo apt install -y python3 python3-pip",
+
       "mkdir -p /home/ubuntu/backend"
     ]
   }
@@ -157,8 +163,15 @@ resource "null_resource" "frontend" {
 
   provisioner "remote-exec" {
     inline = [
-      "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -",
-      "sudo apt install -y nodejs",
+      # wait for cloud-init & dpkg lock
+      "while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 5; done",
+
+      "export DEBIAN_FRONTEND=noninteractive",
+
+      "sudo apt update -y",
+      "sudo apt install -y nodejs npm",
+
+      "sudo npm install -g pm2",
       "mkdir -p /home/ubuntu/frontend"
     ]
   }
@@ -172,7 +185,9 @@ resource "null_resource" "frontend" {
     inline = [
       "cd /home/ubuntu/frontend",
       "npm install",
-      "nohup npm start > frontend.log 2>&1 &"
+      "pm2 start npm --name frontend -- start",
+      "pm2 save"
     ]
   }
 }
+
