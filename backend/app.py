@@ -8,7 +8,8 @@ app = Flask(__name__)
 CORS(app)
 
 
-MONGO_URI = os.environ.get('MONGO_URI', 'mongodb://mongo:27017/')
+MONGO_URI = "mongodb+srv://maqs_db_user:UzwPnTZi2Jjf2M8y@cluster0.b3gn9jq.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+
 client = MongoClient(MONGO_URI)
 db = client['formdb']
 collection = db['submissions']

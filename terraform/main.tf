@@ -98,96 +98,17 @@ resource "aws_security_group" "app_sg" {
 # EC2 Instance
 # --------------------
 resource "aws_instance" "app" {
-  ami                    = "ami-0f5ee92e2d63afc18" # Ubuntu 22.04 ap-south-1
+  ami                    = "ami-0f5ee92e2d63afc18"
   instance_type          = "t3.micro"
   key_name               = var.key_name
   subnet_id              = aws_subnet.public_subnet.id
   vpc_security_group_ids = [aws_security_group.app_sg.id]
 
+  user_data = file("${path.module}/user-data.sh")
 
   tags = {
     Name = "flask-express-ec2"
   }
 }
 
-resource "null_resource" "backend" {
-  depends_on = [aws_instance.app]
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.private_key_path)
-    host        = aws_instance.app.public_ip
-    timeout     = "5m"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      # wait for cloud-init & dpkg lock
-      "while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 5; done",
-
-      "export DEBIAN_FRONTEND=noninteractive",
-
-      "sudo apt update -y",
-      "sudo apt install -y python3 python3-pip",
-
-      "mkdir -p /home/ubuntu/backend"
-    ]
-  }
-
-  provisioner "file" {
-    source      = "../backend/"
-    destination = "/home/ubuntu/backend"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /home/ubuntu/backend",
-      "pip3 install -r requirements.txt",
-      "nohup python3 app.py > backend.log 2>&1 &"
-    ]
-  }
-}
-
-
-resource "null_resource" "frontend" {
-  depends_on = [null_resource.backend]
-
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"
-    private_key = file(var.private_key_path)
-    host        = aws_instance.app.public_ip
-    timeout     = "5m"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      # wait for cloud-init & dpkg lock
-      "while sudo fuser /var/lib/dpkg/lock >/dev/null 2>&1; do sleep 5; done",
-
-      "export DEBIAN_FRONTEND=noninteractive",
-
-      "sudo apt update -y",
-      "sudo apt install -y nodejs npm",
-
-      "sudo npm install -g pm2",
-      "mkdir -p /home/ubuntu/frontend"
-    ]
-  }
-
-  provisioner "file" {
-    source      = "../frontend/"
-    destination = "/home/ubuntu/frontend"
-  }
-
-  provisioner "remote-exec" {
-    inline = [
-      "cd /home/ubuntu/frontend",
-      "npm install",
-      "pm2 start npm --name frontend -- start",
-      "pm2 save"
-    ]
-  }
-}
 
