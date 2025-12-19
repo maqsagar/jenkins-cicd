@@ -97,7 +97,7 @@ resource "aws_security_group" "app_sg" {
 # --------------------
 # EC2 Instance
 # --------------------
-resource "aws_instance" "app_server" {
+resource "aws_instance" "app" {
   ami                    = "ami-0f5ee92e2d63afc18" # Ubuntu 22.04 ap-south-1
   instance_type          = "t3.micro"
   key_name               = var.key_name
@@ -118,23 +118,31 @@ resource "null_resource" "backend" {
     user        = "ubuntu"
     private_key = file(var.private_key_path)
     host        = aws_instance.app.public_ip
-  }
-
-  provisioner "file" {
-    source      = "../backend"
-    destination = "/home/ubuntu/backend"
+    timeout     = "5m"
   }
 
   provisioner "remote-exec" {
     inline = [
       "sudo apt update",
       "sudo apt install -y python3-pip",
+      "mkdir -p /home/ubuntu/backend"
+    ]
+  }
+
+  provisioner "file" {
+    source      = "../backend/"
+    destination = "/home/ubuntu/backend"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
       "cd /home/ubuntu/backend",
       "pip3 install -r requirements.txt",
       "nohup python3 app.py > backend.log 2>&1 &"
     ]
   }
 }
+
 
 resource "null_resource" "frontend" {
   depends_on = [null_resource.backend]
@@ -144,16 +152,24 @@ resource "null_resource" "frontend" {
     user        = "ubuntu"
     private_key = file(var.private_key_path)
     host        = aws_instance.app.public_ip
+    timeout     = "5m"
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -",
+      "sudo apt install -y nodejs",
+      "mkdir -p /home/ubuntu/frontend"
+    ]
   }
 
   provisioner "file" {
-    source      = "../frontend"
+    source      = "../frontend/"
     destination = "/home/ubuntu/frontend"
   }
 
   provisioner "remote-exec" {
     inline = [
-      "sudo apt install -y nodejs npm",
       "cd /home/ubuntu/frontend",
       "npm install",
       "nohup npm start > frontend.log 2>&1 &"
