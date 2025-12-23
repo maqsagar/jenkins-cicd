@@ -10,7 +10,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/<your-username>/<your-repo>.git'
+                    url: 'hhttps://github.com/maqsagar/jenkins-cicd.git'
             }
         }
 
