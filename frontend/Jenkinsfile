@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        nodejs "node18"
-    }
-
     environment {
         APP_NAME = "express-frontend"
         FRONTEND_DIR = "frontend"
@@ -21,7 +17,11 @@ pipeline {
         stage('Install Dependencies') {
             steps {
                 dir("${FRONTEND_DIR}") {
-                    sh 'npm install'
+                    sh '''
+                    node -v
+                    npm -v
+                    npm install
+                    '''
                 }
             }
         }
