@@ -10,7 +10,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/<your-username>/<your-repo>.git'
+                    url: 'https://github.com/maqsagar/jenkins-cicd.git'
             }
         }
 
@@ -26,6 +26,16 @@ pipeline {
                 }
             }
         }
+
+        stage('Run Tests') {
+        steps {
+        sh '''
+        . backend/venv/bin/activate
+        pytest || true
+        '''
+                }
+            }
+        }   
 
         stage('Restart Flask App') {
             steps {
