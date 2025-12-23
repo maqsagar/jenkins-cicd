@@ -1,0 +1,47 @@
+pipeline {
+    agent any
+
+    tools {
+        nodejs "node18"
+    }
+
+    environment {
+        APP_NAME = "express-frontend"
+        FRONTEND_DIR = "frontend"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/<your-username>/<your-repo>.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir("${FRONTEND_DIR}") {
+                    sh 'npm install'
+                }
+            }
+        }
+
+        stage('Restart Express App') {
+            steps {
+                sh '''
+                pm2 restart ${APP_NAME} || \
+                pm2 start frontend/server.js --name ${APP_NAME}
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Express frontend deployed successfully"
+        }
+        failure {
+            echo "❌ Express frontend deployment failed"
+        }
+    }
+}

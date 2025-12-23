@@ -1,0 +1,48 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_NAME = "flask-backend"
+        BACKEND_DIR = "backend"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'main',
+                    url: 'https://github.com/<your-username>/<your-repo>.git'
+            }
+        }
+
+        stage('Install Dependencies') {
+            steps {
+                dir("${BACKEND_DIR}") {
+                    sh '''
+                    python3 -m venv venv || true
+                    . venv/bin/activate
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    '''
+                }
+            }
+        }
+
+        stage('Restart Flask App') {
+            steps {
+                sh '''
+                pm2 restart ${APP_NAME} || \
+                pm2 start backend/app.py --name ${APP_NAME} --interpreter python3
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Flask backend deployed successfully"
+        }
+        failure {
+            echo "❌ Flask backend deployment failed"
+        }
+    }
+}
